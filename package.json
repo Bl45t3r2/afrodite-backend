@@ -32,7 +32,12 @@
     "axios": "^1.6.7",
     "ioredis": "^5.3.2"
   },
-  
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "postinstall": "node_modules/.bin/prisma generate",
+    ...
+}
   "jest": {
     "testEnvironment": "node",
     "testMatch": [
