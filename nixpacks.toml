@@ -1,0 +1,5 @@
+[phases.build]
+cmds = ["npm install", "node_modules/.bin/prisma generate"]
+
+[start]
+cmd = "node src/index.js"
