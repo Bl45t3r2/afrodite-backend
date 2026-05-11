@@ -29,6 +29,11 @@ const ALLOWED_ORIGINS = [
   process.env.CLIENT_URL,
   'http://localhost:3000',
   'http://localhost:3001',
+  'https://afrodite-frontend-six.vercel.app',
+  'https://afrodite-frontend-ntdn.vercel.app',
+  'https://project-5yf1u.vercel.app',
+  'https://afrodiz.com',
+  'https://www.afrodiz.com',
 ].filter(Boolean);
 
 const corsOptions = {
