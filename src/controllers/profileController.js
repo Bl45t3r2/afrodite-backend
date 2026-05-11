@@ -36,6 +36,7 @@ exports.getProfiles = async (req, res) => {
       if (coords) { userLat = coords.lat; userLng = coords.lng; }
     }
     if (isVerified === 'true') where.isVerified = true;
+    if (gender) where.gender = gender;
     if (category) where.categories = { has: category };
     if (search) where.displayName = { contains: search, mode: 'insensitive' };
     if (tags) {
@@ -169,8 +170,10 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { displayName, age, city, bio, phone, pricePerHour, categories, tags, isOnline } = req.body;
+    const { displayName, age, city, bio, phone, pricePerHour, categories, tags, gender } = req.body;
 
-    const data = { displayName, city, bio, phone, categories, tags };
+    const data = { displayName, city, bio, phone, categories, tags, gender: gender || undefined,
+ };
     if (age !== undefined && age !== '') data.age = parseInt(age);
     if (pricePerHour !== undefined && pricePerHour !== '') data.pricePerHour = parseFloat(pricePerHour);
     if (isOnline !== undefined) data.isOnline = isOnline;
