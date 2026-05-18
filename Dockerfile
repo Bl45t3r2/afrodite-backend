@@ -9,10 +9,12 @@ COPY prisma ./prisma/
 
 RUN npm install
 
+# Corriger les permissions avant d'exécuter prisma
+RUN chmod +x node_modules/.bin/prisma
 RUN node_modules/.bin/prisma generate
 
 COPY . .
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node src/index.js"]
+CMD ["node", "src/index.js"]
