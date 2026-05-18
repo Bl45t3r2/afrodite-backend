@@ -8,7 +8,7 @@ exports.getProfiles = async (req, res) => {
   try {
     const {
       city, category, minPrice, maxPrice, isOnline, isVerified,
-      page = 1, limit = 12, search, tags
+      page = 1, limit = 12, search, tags, gender
     } = req.query;
 
     // Cache key basée sur tous les paramètres de filtre
@@ -31,7 +31,6 @@ exports.getProfiles = async (req, res) => {
       userLat = parseFloat(req.query.lat);
       userLng = parseFloat(req.query.lng);
     } else if (city && radiusKm) {
-      // Géocoder la ville sélectionnée
       const coords = getCityCoords(city);
       if (coords) { userLat = coords.lat; userLng = coords.lng; }
     }
@@ -74,13 +73,11 @@ exports.getProfiles = async (req, res) => {
         if (p.latitude && p.longitude) {
           return haversineKm(userLat, userLng, p.latitude, p.longitude) <= radiusKm;
         }
-        // Fallback : vérifier via coords de la ville
         const coords = getCityCoords(p.city);
         if (coords) return haversineKm(userLat, userLng, coords.lat, coords.lng) <= radiusKm;
-        return true; // inclure si pas de coords
+        return true;
       });
 
-      // Ajouter la distance à chaque profil
       filteredProfiles = filteredProfiles.map(p => {
         const coords = p.latitude && p.longitude
           ? { lat: p.latitude, lng: p.longitude }
@@ -131,7 +128,6 @@ exports.getProfile = async (req, res) => {
 
     if (!profile) return res.status(404).json({ error: 'Profil introuvable' });
 
-    // Bloquer l'accès public aux profils admin
     if (profile.user?.role === 'ADMIN') return res.status(404).json({ error: 'Profil introuvable' });
 
     await prisma.profile.update({
@@ -139,7 +135,6 @@ exports.getProfile = async (req, res) => {
       data: { viewCount: { increment: 1 } }
     });
 
-    // Profils similaires — même ville ou même catégorie, exclu l'admin et le profil courant
     const similar = await prisma.profile.findMany({
       where: {
         id: { not: profile.id },
@@ -169,15 +164,14 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { displayName, age, city, bio, phone, pricePerHour, categories, tags, isOnline } = req.body;
-    const { displayName, age, city, bio, phone, pricePerHour, categories, tags, gender } = req.body;
+    // ✅ Fusionné en une seule déclaration (supprime le doublon displayName)
+    const { displayName, age, city, bio, phone, pricePerHour, categories, tags, isOnline, gender } = req.body;
 
-    const data = { displayName, city, bio, phone, categories, tags, gender: gender || undefined,
- };
+    const data = { displayName, city, bio, phone, categories, tags, gender: gender || undefined };
     if (age !== undefined && age !== '') data.age = parseInt(age);
     if (pricePerHour !== undefined && pricePerHour !== '') data.pricePerHour = parseFloat(pricePerHour);
     if (isOnline !== undefined) data.isOnline = isOnline;
-    // Géocoder automatiquement la ville
+
     if (city) {
       const coords = getCityCoords(city);
       if (coords) { data.latitude = coords.lat; data.longitude = coords.lng; }
@@ -189,7 +183,8 @@ exports.updateProfile = async (req, res) => {
     });
 
     res.json(profile);
-  } catch {
+  } catch (err) {
+    console.error('updateProfile error:', err.message);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -209,7 +204,6 @@ exports.toggleFavorite = async (req, res) => {
 
   await prisma.favorite.create({ data: { userId, profileId } });
 
-  // Notifier le propriétaire du profil
   try {
     const profile = await prisma.profile.findUnique({ where: { id: profileId }, select: { userId: true, displayName: true } });
     const sender = await prisma.profile.findUnique({ where: { userId }, select: { displayName: true } });
@@ -237,7 +231,6 @@ exports.canReview = async (req, res) => {
     });
     if (!profile) return res.status(404).json({ error: 'Profil introuvable' });
 
-    // Vérifier échange de messages
     const hasMessaged = !!(await prisma.message.findFirst({
       where: {
         OR: [
@@ -247,13 +240,12 @@ exports.canReview = async (req, res) => {
       }
     }));
 
-    // Vérifier avis existant
     const existingReview = await prisma.review.findUnique({
       where: { profileId_userId: { profileId: req.params.id, userId: req.user.id } }
     });
 
     res.json({
-      canReview: true, // on permet toujours, mais on indique si vérifié
+      canReview: true,
       hasMessaged,
       alreadyReviewed: !!existingReview,
       existingReview: existingReview || null,
@@ -274,14 +266,12 @@ exports.addReview = async (req, res) => {
       return res.status(400).json({ error: 'Le commentaire est obligatoire' });
     }
 
-    // Récupérer le profil cible pour avoir son userId
     const targetProfile = await prisma.profile.findUnique({
       where: { id: req.params.id },
       select: { userId: true }
     });
     if (!targetProfile) return res.status(404).json({ error: 'Profil introuvable' });
 
-    // Vérifier si l'auteur a déjà échangé des messages avec ce profil
     const hasMessaged = await prisma.message.findFirst({
       where: {
         OR: [
@@ -299,7 +289,6 @@ exports.addReview = async (req, res) => {
       create: { profileId: req.params.id, userId: req.user.id, rating: parseInt(rating), comment: comment.trim(), isVerified }
     });
 
-    // Notifier le propriétaire du profil
     try {
       const profile = await prisma.profile.findUnique({ where: { id: req.params.id }, select: { userId: true, displayName: true } });
       const sender = await prisma.profile.findUnique({ where: { userId: req.user.id }, select: { displayName: true } });
@@ -316,7 +305,8 @@ exports.addReview = async (req, res) => {
     } catch {}
 
     res.json(review);
-  } catch {
+  } catch (err) {
+    console.error('addReview error:', err.message);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -349,7 +339,6 @@ exports.getMyStats = async (req, res) => {
         _avg: { rating: true },
         _count: true
       }),
-      // Vues simulées sur 7 jours (basé sur viewCount total)
       Promise.resolve(
         Array.from({ length: 7 }, (_, i) => ({
           day: new Date(Date.now() - (6 - i) * 86400000).toLocaleDateString('fr-FR', { weekday: 'short' }),
@@ -366,7 +355,8 @@ exports.getMyStats = async (req, res) => {
       reviewsCount: reviewsData._count,
       viewsPerDay: viewsThisWeek
     });
-  } catch {
+  } catch (err) {
+    console.error('getMyStats error:', err.message);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -378,7 +368,6 @@ exports.getPopularTags = async (req, res) => {
       select: { tags: true }
     });
 
-    // Compter la fréquence de chaque tag
     const tagCount = {};
     profiles.forEach(p => {
       p.tags.forEach(tag => {
@@ -392,7 +381,8 @@ exports.getPopularTags = async (req, res) => {
       .map(([tag, count]) => ({ tag, count }));
 
     res.json(sorted);
-  } catch {
+  } catch (err) {
+    console.error('getPopularTags error:', err.message);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
