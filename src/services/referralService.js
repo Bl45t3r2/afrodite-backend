@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { createNotification } = require('./notificationService');
-const prisma = new PrismaClient();
 
 // Générer un code unique (6 caractères alphanumériques lisibles)
 function generateCode(displayName = '') {
