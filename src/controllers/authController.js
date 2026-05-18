@@ -93,15 +93,32 @@ exports.register = async (req, res) => {
       }
     }
 
+    // Envoi email de vérification avec logs détaillés
+    let emailSent = false;
     try {
+      console.log('=== ENVOI EMAIL VERIFICATION ===');
+      console.log('To:', data.email);
+      console.log('SMTP_HOST:', process.env.SMTP_HOST);
+      console.log('SMTP_PORT:', process.env.SMTP_PORT);
+      console.log('SMTP_USER:', process.env.SMTP_USER);
+      console.log('SMTP_PASS défini:', !!process.env.SMTP_PASS);
+      console.log('CLIENT_URL:', process.env.CLIENT_URL);
       await sendVerificationEmail(data.email, verificationToken);
+      emailSent = true;
+      console.log('✅ Email envoyé avec succès à', data.email);
     } catch (emailErr) {
-      console.error('Erreur envoi email:', emailErr.message);
+      console.error('=== ERREUR EMAIL ===');
+      console.error('Message:', emailErr.message);
+      console.error('Code:', emailErr.code);
+      console.error('Response:', emailErr.response);
+      console.error('ResponseCode:', emailErr.responseCode);
+      console.error('Command:', emailErr.command);
+      console.error('===================');
     }
 
     res.status(201).json({
       message: 'Compte créé ! Vérifiez votre email pour activer votre compte.',
-      emailSent: true,
+      emailSent,
     });
   } catch (err) {
     if (err.name === 'ZodError') return res.status(400).json({ error: err.errors });
@@ -154,7 +171,8 @@ exports.resendVerification = async (req, res) => {
     await prisma.user.update({ where: { id: user.id }, data: { verificationToken, verificationExpiry } });
     await sendVerificationEmail(email, verificationToken);
     res.json({ message: 'Email de confirmation renvoyé !' });
-  } catch {
+  } catch (err) {
+    console.error('resendVerification error:', err.message);
     res.status(500).json({ error: 'Erreur envoi email' });
   }
 };
