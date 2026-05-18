@@ -5,7 +5,10 @@ const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.SMTP_PASS;
 const FROM_EMAIL = process.env.SMTP_FROM || 'noreply@afrodiz.com';
 const FROM_NAME = 'Afrodite';
 
+<<<<<<< HEAD
 // Envoyer via l'API HTTP Brevo (pas SMTP — évite les blocages de ports)
+=======
+>>>>>>> 1d48245 (fix: use Brevo HTTP API instead of SMTP)
 async function sendBrevoEmail({ to, subject, html }) {
   const payload = JSON.stringify({
     sender: { name: FROM_NAME, email: FROM_EMAIL },
@@ -36,6 +39,7 @@ async function sendBrevoEmail({ to, subject, html }) {
         }
       });
     });
+<<<<<<< HEAD
 
     req.on('error', reject);
     req.setTimeout(10000, () => {
@@ -43,6 +47,10 @@ async function sendBrevoEmail({ to, subject, html }) {
       reject(new Error('Brevo API timeout'));
     });
 
+=======
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('Brevo API timeout')); });
+>>>>>>> 1d48245 (fix: use Brevo HTTP API instead of SMTP)
     req.write(payload);
     req.end();
   });
@@ -50,6 +58,7 @@ async function sendBrevoEmail({ to, subject, html }) {
 
 exports.sendVerificationEmail = async (email, token) => {
   const link = `${BASE_URL}/auth/verify-email?token=${token}`;
+<<<<<<< HEAD
 
   await sendBrevoEmail({
     to: email,
@@ -99,6 +108,24 @@ exports.sendVerificationEmail = async (email, token) => {
   </table>
 </body>
 </html>`,
+=======
+  await sendBrevoEmail({
+    to: email,
+    subject: '✨ Confirmez votre adresse email — Afrodite',
+    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#D4537E,#993556);padding:36px;text-align:center">
+        <h1 style="margin:0;color:#fff;font-size:28px">Afrodite</h1>
+      </div>
+      <div style="padding:40px 48px">
+        <h2 style="color:#1a1a1a">Confirmez votre email</h2>
+        <p style="color:#6b7280;line-height:1.6">Cliquez sur le bouton ci-dessous pour activer votre compte. Ce lien est valable <strong>24 heures</strong>.</p>
+        <div style="text-align:center;margin:32px 0">
+          <a href="${link}" style="background:linear-gradient(135deg,#D4537E,#993556);color:#fff;text-decoration:none;font-size:16px;font-weight:600;padding:16px 40px;border-radius:12px;display:inline-block">✅ Confirmer mon email</a>
+        </div>
+        <p style="color:#9ca3af;font-size:13px">Ou copiez ce lien : <br><span style="word-break:break-all;font-size:12px">${link}</span></p>
+      </div>
+    </div>`,
+>>>>>>> 1d48245 (fix: use Brevo HTTP API instead of SMTP)
   });
 };
 
@@ -106,6 +133,7 @@ exports.sendWelcomeEmail = async (email, displayName) => {
   await sendBrevoEmail({
     to: email,
     subject: '🎉 Bienvenue sur Afrodite !',
+<<<<<<< HEAD
     html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -139,11 +167,24 @@ exports.sendWelcomeEmail = async (email, displayName) => {
   </table>
 </body>
 </html>`,
+=======
+    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#D4537E,#993556);padding:36px;text-align:center">
+        <h1 style="margin:0;color:#fff;font-size:28px">Afrodite</h1>
+      </div>
+      <div style="padding:40px 48px">
+        <h2 style="color:#1a1a1a">Bienvenue, ${displayName} ! 🎉</h2>
+        <p style="color:#6b7280;line-height:1.6">Votre compte est activé. Complétez votre profil et commencez à vous connecter avec des milliers de membres.</p>
+        <a href="${BASE_URL}/dashboard" style="background:linear-gradient(135deg,#D4537E,#993556);color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 32px;border-radius:12px;display:inline-block">Compléter mon profil →</a>
+      </div>
+    </div>`,
+>>>>>>> 1d48245 (fix: use Brevo HTTP API instead of SMTP)
   });
 };
 
 exports.sendPasswordResetEmail = async (email, token) => {
   const link = `${BASE_URL}/auth/reset-password?token=${token}`;
+<<<<<<< HEAD
 
   await sendBrevoEmail({
     to: email,
@@ -190,5 +231,23 @@ exports.sendPasswordResetEmail = async (email, token) => {
   </table>
 </body>
 </html>`,
+=======
+  await sendBrevoEmail({
+    to: email,
+    subject: '🔑 Réinitialisation de votre mot de passe — Afrodite',
+    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#D4537E,#993556);padding:36px;text-align:center">
+        <h1 style="margin:0;color:#fff;font-size:28px">Afrodite</h1>
+      </div>
+      <div style="padding:40px 48px">
+        <h2 style="color:#1a1a1a">Réinitialisation du mot de passe</h2>
+        <p style="color:#6b7280;line-height:1.6">Cliquez ci-dessous pour choisir un nouveau mot de passe. Lien valable <strong>1 heure</strong>.</p>
+        <div style="text-align:center;margin:32px 0">
+          <a href="${link}" style="background:linear-gradient(135deg,#D4537E,#993556);color:#fff;text-decoration:none;font-size:16px;font-weight:600;padding:16px 40px;border-radius:12px;display:inline-block">🔑 Réinitialiser mon mot de passe</a>
+        </div>
+        <p style="color:#9ca3af;font-size:13px">Lien direct : <br><span style="word-break:break-all;font-size:12px">${link}</span></p>
+      </div>
+    </div>`,
+>>>>>>> 1d48245 (fix: use Brevo HTTP API instead of SMTP)
   });
 };
