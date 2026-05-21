@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendNotification } = require('../socket');
-const prisma = new PrismaClient();
 
 const REASON_LABELS = {
   FAKE_PROFILE: 'Faux profil',

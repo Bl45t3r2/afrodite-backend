@@ -1,8 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { createNotification } = require('./notificationService');
 const { activateReferralRewards } = require('./referralService');
-const prisma = new PrismaClient();
 
 const axios = require('axios');
 

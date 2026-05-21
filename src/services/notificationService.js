@@ -1,6 +1,5 @@
 const { sendPushToUser } = require('./pushService');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 /**
  * Crée une notification en base et l'envoie via Socket.io en temps réel

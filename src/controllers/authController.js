@@ -2,11 +2,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { z } = require('zod');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } = require('../services/emailService');
 const { applyReferralCode, getOrCreateReferralCode } = require('../services/referralService');
 
-const prisma = new PrismaClient();
 
 const registerSchema = z.object({
   email: z.string().email(),

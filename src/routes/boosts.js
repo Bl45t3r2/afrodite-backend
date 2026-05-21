@@ -2,8 +2,7 @@ const cache = require('../services/cacheService');
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 const BOOST_PLANS = {
   DAY:   { duration: 1,  days: 1,  price: 1000,  label: '24 heures' },

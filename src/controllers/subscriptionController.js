@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const {
   createStripeCheckout,
   createFedapayTransaction,
@@ -7,7 +7,6 @@ const {
   getUserPayments,
 } = require('../services/paymentService');
 
-const prisma = new PrismaClient();
 
 // POST /subscriptions/checkout/stripe
 exports.stripeCheckout = async (req, res) => {

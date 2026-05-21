@@ -1,8 +1,7 @@
 const cloudinary = require('cloudinary').v2;
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendPushToUser } = require('./pushService');
 const { createNotification } = require('./notificationService');
-const prisma = new PrismaClient();
 
 /**
  * Analyse une image via Cloudinary AI moderation

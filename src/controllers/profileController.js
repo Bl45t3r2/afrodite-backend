@@ -1,8 +1,7 @@
 const cache = require('../services/cacheService');
 const { getCityCoords, haversineKm } = require('../services/geoService');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendNotification } = require('../socket');
-const prisma = new PrismaClient();
 
 exports.getProfiles = async (req, res) => {
   try {
