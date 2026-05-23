@@ -81,6 +81,7 @@ model Profile {
   tags         String[]
   isVerified   Boolean       @default(false)
   isOnline     Boolean       @default(false)
+  isPrivate    Boolean       @default(false)
   latitude     Float?
   longitude    Float?
   status       ProfileStatus @default(PENDING)

@@ -16,7 +16,7 @@ exports.getProfiles = async (req, res) => {
     if (cached) return res.json(cached);
 
     const where = {
-      status: 'ACTIVE',
+      status: 'ACTIVE', isPrivate: false,
       user: { role: { not: 'ADMIN' } }
     };
 
@@ -128,6 +128,12 @@ exports.getProfile = async (req, res) => {
     if (!profile) return res.status(404).json({ error: 'Profil introuvable' });
 
     if (profile.user?.role === 'ADMIN') return res.status(404).json({ error: 'Profil introuvable' });
+    
+    // Profil privé : seul le propriétaire peut le voir
+    const requesterId = req.user?.id;
+    if (profile.isPrivate && profile.userId !== requesterId) {
+      return res.status(403).json({ error: 'Ce profil est privé' });
+    }
 
     await prisma.profile.update({
       where: { id: req.params.id },
@@ -138,7 +144,7 @@ exports.getProfile = async (req, res) => {
     const similarSameCity = await prisma.profile.findMany({
       where: {
         id: { not: profile.id },
-        status: 'ACTIVE',
+        status: 'ACTIVE', isPrivate: false,
         city: profile.city,
         user: { role: { not: 'ADMIN' } },
       },
@@ -160,7 +166,7 @@ exports.getProfile = async (req, res) => {
       const sameCategory = await prisma.profile.findMany({
         where: {
           id: { not: profile.id, notIn: similar.map(s => s.id) },
-          status: 'ACTIVE',
+          status: 'ACTIVE', isPrivate: false,
           categories: { hasSome: profile.categories },
           user: { role: { not: 'ADMIN' } },
         },
@@ -183,7 +189,7 @@ exports.getProfile = async (req, res) => {
       const popular = await prisma.profile.findMany({
         where: {
           id: { not: profile.id, notIn: similar.map(s => s.id) },
-          status: 'ACTIVE',
+          status: 'ACTIVE', isPrivate: false,
           user: { role: { not: 'ADMIN' } },
         },
         take: 4 - similar.length,
@@ -209,9 +215,10 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     // ✅ Fusionné en une seule déclaration (supprime le doublon displayName)
-    const { displayName, age, city, bio, phone, pricePerHour, categories, tags, isOnline, gender } = req.body;
+    const { displayName, age, city, bio, phone, pricePerHour, categories, tags, isOnline, gender, isPrivate } = req.body;
 
     const data = { displayName, city, bio, phone, categories, tags, gender: gender || undefined };
+    if (typeof isPrivate === 'boolean') data.isPrivate = isPrivate;
     if (age !== undefined && age !== '') data.age = parseInt(age);
     if (pricePerHour !== undefined && pricePerHour !== '') data.pricePerHour = parseFloat(pricePerHour);
     if (isOnline !== undefined) data.isOnline = isOnline;
@@ -408,7 +415,7 @@ exports.getMyStats = async (req, res) => {
 exports.getPopularTags = async (req, res) => {
   try {
     const profiles = await prisma.profile.findMany({
-      where: { status: 'ACTIVE', user: { role: { not: 'ADMIN' } } },
+      where: { status: 'ACTIVE', isPrivate: false, user: { role: { not: 'ADMIN' } } },
       select: { tags: true }
     });
 
