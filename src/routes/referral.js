@@ -100,3 +100,19 @@ router.delete('/partner/:code', authenticate, requireRole('ADMIN'), async (req, 
 });
 
 module.exports = router;
+
+// POST /referral/apply — appliquer un code de parrainage
+router.post('/apply', authenticate, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Code requis' });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (user.referredById) return res.status(400).json({ error: 'Vous avez deja un parrain' });
+    const { applyReferralCode } = require('../services/referralService');
+    const result = await applyReferralCode(req.user.id, code);
+    if (!result) return res.status(400).json({ error: 'Code invalide ou inexistant' });
+    res.json({ success: true, message: 'Code de parrainage applique !' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
