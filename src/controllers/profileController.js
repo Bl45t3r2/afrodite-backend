@@ -134,25 +134,70 @@ exports.getProfile = async (req, res) => {
       data: { viewCount: { increment: 1 } }
     });
 
-    const similar = await prisma.profile.findMany({
+    // 1. Même ville + même catégorie (les plus proches/similaires)
+    const similarSameCity = await prisma.profile.findMany({
       where: {
         id: { not: profile.id },
         status: 'ACTIVE',
+        city: profile.city,
         user: { role: { not: 'ADMIN' } },
-        OR: [
-          { city: profile.city },
-          profile.categories.length > 0
-            ? { categories: { hasSome: profile.categories } }
-            : {}
-        ]
       },
-      take: 4,
-      orderBy: { viewCount: 'desc' },
+      take: 6,
+      orderBy: [
+        { boosts: { _count: 'desc' } },
+        { viewCount: 'desc' },
+      ],
       include: {
         photos: { where: { isMain: true, isPrivate: false }, take: 1 },
-        _count: { select: { reviews: true } }
+        _count: { select: { reviews: true } },
+        boosts: { where: { active: true }, take: 1 },
       }
     });
+
+    // 2. Même catégorie (ville différente) si pas assez
+    let similar = similarSameCity;
+    if (similar.length < 4 && profile.categories.length > 0) {
+      const sameCategory = await prisma.profile.findMany({
+        where: {
+          id: { not: profile.id, notIn: similar.map(s => s.id) },
+          status: 'ACTIVE',
+          categories: { hasSome: profile.categories },
+          user: { role: { not: 'ADMIN' } },
+        },
+        take: 4 - similar.length,
+        orderBy: [
+          { boosts: { _count: 'desc' } },
+          { viewCount: 'desc' },
+        ],
+        include: {
+          photos: { where: { isMain: true, isPrivate: false }, take: 1 },
+          _count: { select: { reviews: true } },
+          boosts: { where: { active: true }, take: 1 },
+        }
+      });
+      similar = [...similar, ...sameCategory];
+    }
+
+    // 3. Compléter avec des profils populaires si toujours pas assez
+    if (similar.length < 4) {
+      const popular = await prisma.profile.findMany({
+        where: {
+          id: { not: profile.id, notIn: similar.map(s => s.id) },
+          status: 'ACTIVE',
+          user: { role: { not: 'ADMIN' } },
+        },
+        take: 4 - similar.length,
+        orderBy: { viewCount: 'desc' },
+        include: {
+          photos: { where: { isMain: true, isPrivate: false }, take: 1 },
+          _count: { select: { reviews: true } },
+          boosts: { where: { active: true }, take: 1 },
+        }
+      });
+      similar = [...similar, ...popular];
+    }
+
+    similar = similar.slice(0, 4);
 
     res.json({ ...profile, similar });
   } catch (err) {
