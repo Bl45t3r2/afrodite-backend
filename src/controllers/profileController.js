@@ -6,7 +6,7 @@ const { sendNotification } = require('../socket');
 exports.getProfiles = async (req, res) => {
   try {
     const {
-      city, category, minPrice, maxPrice, isOnline, isVerified,
+      city, category, minPrice, maxPrice, minRating, isOnline, isVerified,
       page = 1, limit = 12, search, tags, gender
     } = req.query;
 
@@ -45,6 +45,24 @@ exports.getProfiles = async (req, res) => {
       where.pricePerHour = {};
       if (minPrice) where.pricePerHour.gte = parseFloat(minPrice);
       if (maxPrice) where.pricePerHour.lte = parseFloat(maxPrice);
+    }
+
+    // Filtre par note minimum
+    let profileIdsWithRating = null;
+    if (minRating) {
+      const minR = parseFloat(minRating);
+      const profilesWithRating = await prisma.profile.findMany({
+        where,
+        select: { id: true, reviews: { select: { rating: true } } }
+      });
+      profileIdsWithRating = profilesWithRating
+        .filter(p => {
+          if (!p.reviews.length) return false;
+          const avg = p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length;
+          return avg >= minR;
+        })
+        .map(p => p.id);
+      where.id = { in: profileIdsWithRating };
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
