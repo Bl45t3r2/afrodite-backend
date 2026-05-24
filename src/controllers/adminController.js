@@ -44,6 +44,24 @@ exports.getStats = async (req, res) => {
   // Revenu total complété
   const totalRevenueFcfa = revenueData.find(r => r.status === 'COMPLETED')?._sum?.amount || 0;
 
+  // Revenus par jour sur 30 jours
+  const revenuePerDay = [];
+  for (let i = 29; i >= 0; i--) {
+    const start = new Date(now - i * 24 * 60 * 60 * 1000); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setHours(23,59,59,999);
+    const payments = await prisma.payment.aggregate({ where: { status: 'COMPLETED', createdAt: { gte: start, lte: end } }, _sum: { amount: true } });
+    revenuePerDay.push({ date: start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), amount: payments._sum.amount || 0 });
+  }
+  const revenueByPlan = await prisma.payment.groupBy({ by: ['plan'], where: { status: 'COMPLETED' }, _sum: { amount: true }, _count: { plan: true } });
+  const revenueByProvider = await prisma.payment.groupBy({ by: ['provider'], where: { status: 'COMPLETED' }, _sum: { amount: true }, _count: { provider: true } });
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  const [revenueThisMonth, revenueLastMonth] = await Promise.all([
+    prisma.payment.aggregate({ where: { status: 'COMPLETED', createdAt: { gte: startOfMonth } }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { status: 'COMPLETED', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth } }, _sum: { amount: true } }),
+  ]);
+
   res.json({
     totalUsers, totalProfiles, activeProfiles, pendingProfiles, totalMessages,
     newUsersToday, newUsers7Days, newUsers30Days,
