@@ -53,6 +53,11 @@ exports.getStats = async (req, res) => {
     totalRevenueFcfa,
     topCities: topCities.map(c => ({ city: c.city, count: c._count.city })),
     registrationsPerDay,
+    revenuePerDay,
+    revenueByPlan: revenueByPlan.map(r => ({ plan: r.plan || 'N/A', amount: r._sum.amount || 0, count: r._count.plan })),
+    revenueByProvider: revenueByProvider.map(r => ({ provider: r.provider, amount: r._sum.amount || 0, count: r._count.provider })),
+    revenueThisMonth: revenueThisMonth._sum.amount || 0,
+    revenueLastMonth: revenueLastMonth._sum.amount || 0,
     conversionRate: totalUsers > 0 ? Math.round((premiumUsers / totalUsers) * 100) : 0,
   });
 };
